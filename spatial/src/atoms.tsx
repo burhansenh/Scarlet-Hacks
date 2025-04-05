@@ -21,7 +21,7 @@ import {
   imageOptions,
   modelOptions,
 } from "./consts";
-import { BoundingBox2DType, BoundingBox3DType, DetectTypes } from "./Types";
+import { BoundingBox2DType, DetectTypes } from "./Types";
 
 export const ImageSrcAtom = atom<string | null>(imageOptions[0]);
 
@@ -36,23 +36,9 @@ export const CustomPromptsAtom = atom<Record<DetectTypes, string>>({
   ...defaultPrompts,
 });
 
-export type PointingType = {
-  point: {
-    x: number;
-    y: number;
-  };
-  label: string;
-};
-
 export const RevealOnHoverModeAtom = atom<boolean>(true);
 
 export const FOVAtom = atom<number>(60);
-
-export const BoundingBoxes3DAtom = atom<BoundingBox3DType[]>([]);
-
-export const PointsAtom = atom<PointingType[]>([]);
-
-// export const PromptAtom = atom<string>("main objects");
 
 export const TemperatureAtom = atom<number>(0.5);
 

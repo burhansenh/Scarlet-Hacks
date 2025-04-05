@@ -17,12 +17,10 @@ import getStroke from "perfect-freehand";
 import {GoogleGenerativeAI} from "@google/generative-ai";
 import {
   BoundingBoxes2DAtom,
-  BoundingBoxes3DAtom,
   ShareStream,
   DetectTypeAtom,
   PromptsAtom,
   ModelSelectedAtom,
-  PointsAtom,
   HoverEnteredAtom,
   LinesAtom,
   ImageSrcAtom,
@@ -32,18 +30,16 @@ import {
 } from "./atoms";
 import { lineOptions } from "./consts.js";
 import { getSvgPathFromStroke, loadImage } from "./utils";
-import {  useState } from "react";
+import { useState } from "react";
 
 const client = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 
 export function Prompt() {
   const [temperature, setTemperature] = useAtom(TemperatureAtom);
   const [, setBoundingBoxes2D] = useAtom(BoundingBoxes2DAtom);
-  const [, setBoundingBoxes3D] = useAtom(BoundingBoxes3DAtom);
   const [stream] = useAtom(ShareStream);
   const [detectType] = useAtom(DetectTypeAtom);
   const [modelSelected] = useAtom(ModelSelectedAtom);
-  const [, setPoints] = useAtom(PointsAtom);
   const [, setHoverEntered] = useAtom(HoverEnteredAtom);
   const [lines] = useAtom(LinesAtom);
   const [videoRef] = useAtom(VideoRefAtom);
@@ -52,28 +48,27 @@ export function Prompt() {
   const [targetPrompt, setTargetPrompt] = useState("items");
   const [labelPrompt, setLabelPrompt] = useState("");
   const [showRawPrompt, setShowRawPrompt] = useState(false);
-
   const [prompts, setPrompts] = useAtom(PromptsAtom);
   const [customPrompts, setCustomPrompts] = useAtom(CustomPromptsAtom);
-
 
   const is2d = detectType === "2D bounding boxes";
 
   const get2dPrompt = () =>
-    `Analyze this hydroponic lettuce plant image. Identify and locate only clearly visible plant health issues using 2-D bounding boxes:
-  1. Leaf discoloration (yellowing, brown spots, or purple veins)
-  2. Stunted growth or wilting (smaller-than-expected size or drooping)
-  3. Curling/crisping leaf edges (upward/downward leaf curling or dry margins)
-  
-  IMPORTANT: If the plant appears healthy with no obvious defects, return an empty list [].
-  Only mark genuine issues with high confidence. Dont overlap bounding boxes. 
-  
-  Output a JSON list with:
-  - Each entry containing the 2D bounding box in "box_2d" as [x1, y1, x2, y2] coordinates
-  - A detailed "label" describing the specific issue detected
-  
-  Format: [{'box_2d':[...], 'label':...}, ...]`;
+    `Detect defects in the hydroponic plant using 2-D bounding boxes. Focus exclusively on these plant health indicators:  
+  1. Leaf discoloration (yellowing, brown spots, or purple veins)  
+  2. Stunted growth or wilting (smaller-than-expected size or drooping)  
+  3. Curling/crisping leaf edges (upward/downward leaf curling or dry 
 
+margins).  
+
+
+  Output a JSON list with:  
+  - Either no issues, or one from the list above.
+  - Each entry containing the 2D bounding box in "box_2d" as [x1, y1, x2, y2] coordinates.  
+  - A text label in "label" specifying the detected issue (e.g., 'yellowing leaves', 'wilting', 'curling edges').  
+
+
+  Format: [{'box_2d':[...], 'label':...}, ...]`;
 
 
 
@@ -84,7 +79,6 @@ export function Prompt() {
     const ctx = copyCanvas.getContext("2d")!;
 
     if (stream) {
-      // screenshare
       const video = videoRef.current!;
       const scale = Math.min(
         maxSize / video.videoWidth,
@@ -104,7 +98,6 @@ export function Prompt() {
       const scale = Math.min(maxSize / image.width, maxSize / image.height);
       copyCanvas.width = image.width * scale;
       copyCanvas.height = image.height * scale;
-      console.log(copyCanvas)
       ctx.drawImage(image, 0, 0, image.width * scale, image.height * scale);
     }
     activeDataURL = copyCanvas.toDataURL("image/png");
@@ -114,7 +107,7 @@ export function Prompt() {
         const p = new Path2D(
           getSvgPathFromStroke(
             getStroke(
-              line[0].map(([x, y]) => [
+              line[0].map(([x, y]: [number, number]) => [
                 x * copyCanvas.width,
                 y * copyCanvas.height,
                 0.5,
@@ -130,7 +123,6 @@ export function Prompt() {
     }
 
     const prompt = prompts[detectType];
-
     setHoverEntered(false);
 
     let response = (await client
@@ -185,7 +177,6 @@ export function Prompt() {
           };
         },
       );
-      setPoints(formattedPoints);
     } else {
       const formattedBoxes = parsedResponse.map(
         (box: {
@@ -215,7 +206,6 @@ export function Prompt() {
           };
         },
       );
-      setBoundingBoxes3D(formattedBoxes);
     }
   }
 
@@ -252,7 +242,7 @@ export function Prompt() {
           />
         ) : showRawPrompt ? (
           <div className="mb-2 text-[var(--text-color-secondary)]">
-            {is2d ? get2dPrompt() : prompts[detectType].join(" ")}
+            {is2d ? get2dPrompt() : prompts[detectType][0]}
           </div>
         ) :(
           <div className="flex flex-col gap-2">
@@ -268,7 +258,7 @@ export function Prompt() {
                 } else {
                   const value = e.target.value;
                   const newPrompts = { ...prompts };
-                  newPrompts[detectType][1] = value;
+                  newPrompts["2D bounding boxes"] = [value];
                   setPrompts(newPrompts);
                 }
               }}

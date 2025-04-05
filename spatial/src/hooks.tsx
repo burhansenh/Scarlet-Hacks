@@ -15,24 +15,18 @@
 import { useAtom } from "jotai";
 import {
   BoundingBoxes2DAtom,
-  BoundingBoxes3DAtom,
   BumpSessionAtom,
   ImageSentAtom,
-  PointsAtom,
 } from "./atoms";
 
 export function useResetState() {
   const [, setImageSent] = useAtom(ImageSentAtom);
   const [, setBoundingBoxes2D] = useAtom(BoundingBoxes2DAtom);
-  const [, setBoundingBoxes3D] = useAtom(BoundingBoxes3DAtom);
-  const [, setPoints] = useAtom(PointsAtom);
   const [, setBumpSession] = useAtom(BumpSessionAtom);
 
   return () => {
     setImageSent(false);
     setBoundingBoxes2D([]);
-    setBoundingBoxes3D([]);
     setBumpSession((prev) => prev + 1);
-    setPoints([]);
   };
 }

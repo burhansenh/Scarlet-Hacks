@@ -12,20 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-export type DetectTypes = "2D bounding boxes" | "3D bounding boxes" | "Points";
+export type DetectTypes = "2D bounding boxes";
 
 export type BoundingBox2DType = {
   x: number;
   y: number;
   width: number;
   height: number;
-  label: string;
-};
-
-export type BoundingBox3DType = {
-  center: [number, number, number];
-  size: [number, number, number];
-  rpy: [number, number, number];
   label: string;
 };
 
