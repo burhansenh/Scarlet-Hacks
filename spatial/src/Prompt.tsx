@@ -60,11 +60,22 @@ export function Prompt() {
   const is2d = detectType === "2D bounding boxes";
 
   const get2dPrompt = () =>
-    `Detect ${
-      targetPrompt
-    }, with no more than 20 items. Output a json list where each entry contains the 2D bounding box in "box_2d" and ${
-      labelPrompt || 'a text label'
-    } in "label".`
+    `Analyze this hydroponic lettuce plant image. Identify and locate only clearly visible plant health issues using 2-D bounding boxes:
+  1. Leaf discoloration (yellowing, brown spots, or purple veins)
+  2. Stunted growth or wilting (smaller-than-expected size or drooping)
+  3. Curling/crisping leaf edges (upward/downward leaf curling or dry margins)
+  
+  IMPORTANT: If the plant appears healthy with no obvious defects, return an empty list [].
+  Only mark genuine issues with high confidence. Dont overlap bounding boxes. 
+  
+  Output a JSON list with:
+  - Each entry containing the 2D bounding box in "box_2d" as [x1, y1, x2, y2] coordinates
+  - A detailed "label" describing the specific issue detected
+  
+  Format: [{'box_2d':[...], 'label':...}, ...]`;
+
+
+
 
   async function handleSend() {
     let activeDataURL;
