@@ -32,55 +32,49 @@ export function TopBar() {
   const [showConfig,] = useAtom(ShowConfigAtom);
 
   return (
-    <div className="flex w-full items-center px-3 py-2 border-b justify-between">
-      <div className="flex gap-3 items-center">
-        <button
-          onClick={() => {
-            resetState();
-          }}
-          className="p-0 border-none underline bg-transparent"
-          style={{
-            minHeight: "0",
+    <div className="flex items-center gap-4">
+      <button
+        onClick={() => {
+          resetState();
+        }}
+        className="text-gray-400 hover:text-white transition-colors"
+      >
+        Reset session
+      </button>
+
+      {detectType === "2D bounding boxes" && (
+        <label className="flex items-center gap-2 select-none text-gray-400">
+          <input
+            type="checkbox"
+            checked={revealOnHover}
+            onChange={(e) => {
+              if (e.target.checked) {
+                setHoverEntered(false);
+              }
+              setRevealOnHoverMode(e.target.checked);
+            }}
+            className="accent-blue-500"
+          />
+          <span>Reveal on hover</span>
+        </label>
+      )}
+      
+      {showConfig && (<label className="flex gap-2 items-center">
+        <select
+          className="border bg-transparent py-1 px-1 focus:border-[#80BBFF] rounded-md"
+          value={modelSelected}
+          onChange={(e) => {
+            const value = e.target.value;
+            setModelSelected(value);
           }}
         >
-          <div>Reset session</div>
-        </button>
-      </div>
-      <div className="flex gap-3 items-center">
-        {detectType === "2D bounding boxes" ? (
-          <div>
-            <label className="flex items-center gap-2 px-3 select-none whitespace-nowrap">
-              <input
-                type="checkbox"
-                checked={revealOnHover}
-                onChange={(e) => {
-                  if (e.target.checked) {
-                    setHoverEntered(false);
-                  }
-                  setRevealOnHoverMode(e.target.checked);
-                }}
-              />
-              <div>reveal on hover</div>
-            </label>
-          </div>
-        ) : null}
-        {showConfig && (<label className="flex gap-2 items-center">
-          <select
-            className="border bg-transparent py-1 px-1 focus:border-[#80BBFF] rounded-md"
-            value={modelSelected}
-            onChange={(e) => {
-              const value = e.target.value;
-              setModelSelected(value);
-            }}
-          >
-            {modelOptions.map((model) => (
-              <option key={model} value={model}>
-                {model}
-              </option>
-            ))}
-          </select>
-        </label>)}
-      </div>
+          {modelOptions.map((model) => (
+            <option key={model} value={model}>
+              {model}
+            </option>
+          ))}
+        </select>
+      </label>)}
     </div>
   );
 }

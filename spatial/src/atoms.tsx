@@ -16,8 +16,6 @@ import { atom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 import {
   colors,
-  defaultPromptParts,
-  defaultPrompts,
   imageOptions,
   modelOptions,
 } from "./consts";
@@ -28,13 +26,6 @@ export const ImageSrcAtom = atom<string | null>(imageOptions[0]);
 export const ImageSentAtom = atom(false);
 
 export const BoundingBoxes2DAtom = atom<BoundingBox2DType[]>([]);
-
-export const PromptsAtom = atom<Record<DetectTypes, string[]>>({
-  ...defaultPromptParts,
-});
-export const CustomPromptsAtom = atom<Record<DetectTypes, string>>({
-  ...defaultPrompts,
-});
 
 export const RevealOnHoverModeAtom = atom<boolean>(true);
 

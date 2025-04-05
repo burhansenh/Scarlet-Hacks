@@ -32,21 +32,27 @@ export function DetectTypeSelector() {
 function SelectOption({ label }: { label: string }) {
   const [detectType, setDetectType] = useAtom(DetectTypeAtom);
   const [, setHoverEntered] = useAtom(HoverEnteredAtom);
-  // const resetState = useResetState();
 
   return (
     <button
-      className="py-6 items-center bg-transparent text-center gap-3"
-      style={{
-        borderColor: detectType === label ? "var(--accent-color)" : undefined,
-        backgroundColor: detectType === label ? "var(--border-color)" : undefined,
-      }}
+      className={`w-full py-4 px-6 rounded-lg transition-all duration-200 text-left ${
+        detectType === label 
+          ? "bg-blue-500/20 border-blue-500/50" 
+          : "hover:bg-gray-700/50"
+      } border border-gray-700/50`}
       onClick={() => {
         setHoverEntered(false);
         setDetectType(label as DetectTypes);
       }}
     >
-      {label}
+      <div className="flex items-center gap-3">
+        <div className={`w-4 h-4 rounded-full border-2 ${
+          detectType === label 
+            ? "border-blue-500 bg-blue-500" 
+            : "border-gray-500"
+        }`} />
+        {label}
+      </div>
     </button>
   );
 }

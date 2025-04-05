@@ -29,15 +29,15 @@ export const modelOptions = [
 ];
 
 export const imageOptions: string[] = [
-  "origami.jpg",
-  "pumpkins.jpg",
-  "clock.jpg",
-  "socks.jpg",
-  "breakfast.jpg",
-  "cat.jpg",
-  "spill.jpg",
-  "fruit.jpg",
-  "baklava.jpg",
+  "1.png",
+  "2.png",
+  "3.png",
+  "4.png",
+  "5.png",
+  "6.png",
+  "7.png",
+  "8.png",
+  "9.png",
 ];
 
 export const lineOptions = {
@@ -46,30 +46,6 @@ export const lineOptions = {
   smoothing: 0,
   streamline: 0,
   simulatePressure: false,
-};
-
-export const defaultPromptParts = {
-  "2D bounding boxes": [
-    "Show me the positions of",
-    "items",
-    "as a JSON list. Do not return masks. Limit to 25 items.",
-  ],
-  "3D bounding boxes": [
-    "Output in json. Detect the 3D bounding boxes of",
-    "items",
-    ', output no more than 10 items. Return a list where each entry contains the object name in "label" and its 3D bounding box in "box_3d".',
-  ],
-  Points: [
-    "Point to the",
-    "items",
-    ' with no more than 10 items. The answer should follow the json format: [{"point": <point>, "label": <label1>}, ...]. The points are in [y, x] format normalized to 0-1000.'
-  ],
-};
-
-export const defaultPrompts = {
-  "2D bounding boxes": defaultPromptParts["2D bounding boxes"].join(" "),
-  "3D bounding boxes": defaultPromptParts["3D bounding boxes"].join(" "),
-  Points: defaultPromptParts.Points.join(" "),
 };
 
 const safetyLevel = "only_high";

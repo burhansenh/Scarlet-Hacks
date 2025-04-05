@@ -19,14 +19,12 @@ import {
   BoundingBoxes2DAtom,
   ShareStream,
   DetectTypeAtom,
-  PromptsAtom,
   ModelSelectedAtom,
   HoverEnteredAtom,
   LinesAtom,
   ImageSrcAtom,
   VideoRefAtom,
   TemperatureAtom,
-  CustomPromptsAtom,
 } from "./atoms";
 import { lineOptions } from "./consts.js";
 import { getSvgPathFromStroke, loadImage } from "./utils";
@@ -44,12 +42,7 @@ export function Prompt() {
   const [lines] = useAtom(LinesAtom);
   const [videoRef] = useAtom(VideoRefAtom);
   const [imageSrc] = useAtom(ImageSrcAtom);
-  const [showCustomPrompt] = useState(false);
-  const [targetPrompt, setTargetPrompt] = useState("items");
-  const [labelPrompt, setLabelPrompt] = useState("");
-  const [showRawPrompt, setShowRawPrompt] = useState(false);
-  const [prompts, setPrompts] = useAtom(PromptsAtom);
-  const [customPrompts, setCustomPrompts] = useAtom(CustomPromptsAtom);
+  const [isLoading, setIsLoading] = useState(false);
 
   const is2d = detectType === "2D bounding boxes";
 
@@ -57,100 +50,97 @@ export function Prompt() {
     `Detect defects in the hydroponic plant using 2-D bounding boxes. Focus exclusively on these plant health indicators:  
   1. Leaf discoloration (yellowing, brown spots, or purple veins)  
   2. Stunted growth or wilting (smaller-than-expected size or drooping)  
-  3. Curling/crisping leaf edges (upward/downward leaf curling or dry 
+  3. Curling/crisping leaf edges (upward/downward leaf curling or dry margins).  
 
-margins).  
-
+  IMPORTANT: Only mark genuine issues with high confidence. No overlapping bounding boxes. 
 
   Output a JSON list with:  
   - Either no issues, or one from the list above.
   - Each entry containing the 2D bounding box in "box_2d" as [x1, y1, x2, y2] coordinates.  
   - A text label in "label" specifying the detected issue (e.g., 'yellowing leaves', 'wilting', 'curling edges').  
 
-
   Format: [{'box_2d':[...], 'label':...}, ...]`;
 
-
-
   async function handleSend() {
-    let activeDataURL;
-    const maxSize = 640;
-    const copyCanvas = document.createElement("canvas");
-    const ctx = copyCanvas.getContext("2d")!;
+    setIsLoading(true);
+    try {
+      let activeDataURL;
+      const maxSize = 640;
+      const copyCanvas = document.createElement("canvas");
+      const ctx = copyCanvas.getContext("2d")!;
 
-    if (stream) {
-      const video = videoRef.current!;
-      const scale = Math.min(
-        maxSize / video.videoWidth,
-        maxSize / video.videoHeight,
-      );
-      copyCanvas.width = video.videoWidth * scale;
-      copyCanvas.height = video.videoHeight * scale;
-      ctx.drawImage(
-        video,
-        0,
-        0,
-        video.videoWidth * scale,
-        video.videoHeight * scale,
-      );
-    } else if (imageSrc) {
-      const image = await loadImage(imageSrc);
-      const scale = Math.min(maxSize / image.width, maxSize / image.height);
-      copyCanvas.width = image.width * scale;
-      copyCanvas.height = image.height * scale;
-      ctx.drawImage(image, 0, 0, image.width * scale, image.height * scale);
-    }
-    activeDataURL = copyCanvas.toDataURL("image/png");
-
-    if (lines.length > 0) {
-      for (const line of lines) {
-        const p = new Path2D(
-          getSvgPathFromStroke(
-            getStroke(
-              line[0].map(([x, y]: [number, number]) => [
-                x * copyCanvas.width,
-                y * copyCanvas.height,
-                0.5,
-              ]),
-              lineOptions,
-            ),
-          ),
+      if (stream) {
+        const video = videoRef.current!;
+        const scale = Math.min(
+          maxSize / video.videoWidth,
+          maxSize / video.videoHeight,
         );
-        ctx.fillStyle = line[1];
-        ctx.fill(p);
+        copyCanvas.width = video.videoWidth * scale;
+        copyCanvas.height = video.videoHeight * scale;
+        ctx.drawImage(
+          video,
+          0,
+          0,
+          video.videoWidth * scale,
+          video.videoHeight * scale,
+        );
+      } else if (imageSrc) {
+        const image = await loadImage(imageSrc);
+        const scale = Math.min(maxSize / image.width, maxSize / image.height);
+        copyCanvas.width = image.width * scale;
+        copyCanvas.height = image.height * scale;
+        ctx.drawImage(image, 0, 0, image.width * scale, image.height * scale);
       }
       activeDataURL = copyCanvas.toDataURL("image/png");
-    }
 
-    const prompt = prompts[detectType];
-    setHoverEntered(false);
+      if (lines.length > 0) {
+        for (const line of lines) {
+          const p = new Path2D(
+            getSvgPathFromStroke(
+              getStroke(
+                line[0].map(([x, y]: [number, number]) => [
+                  x * copyCanvas.width,
+                  y * copyCanvas.height,
+                  0.5,
+                ]),
+                lineOptions,
+              ),
+            ),
+          );
+          ctx.fillStyle = line[1];
+          ctx.fill(p);
+        }
+        activeDataURL = copyCanvas.toDataURL("image/png");
+      }
 
-    let response = (await client
-      .getGenerativeModel(
-        {model: modelSelected},
-        {apiVersion: 'v1beta'}
-      )
-      .generateContent({
-        contents: [
-          {
-            role: "user",
-            parts: [
-              {text: is2d ? get2dPrompt() : prompt.join(" ")},
-              {inlineData: {
-                data: activeDataURL.replace("data:image/png;base64,", ""),
-                mimeType: "image/png"
-              }}
-            ]
-          }
-        ],
-        generationConfig: {temperature}
-      })).response.text()
+      setHoverEntered(false);
 
-    if (response.includes("```json")) {
-      response = response.split("```json")[1].split("```")[0];
-    }
-    const parsedResponse = JSON.parse(response);
-    if (detectType === "2D bounding boxes") {
+      let response = (await client
+        .getGenerativeModel(
+          {model: modelSelected},
+          {apiVersion: 'v1beta'}
+        )
+        .generateContent({
+          contents: [
+            {
+              role: "user",
+              parts: [
+                {text: get2dPrompt()},
+                {inlineData: {
+                  data: activeDataURL.replace("data:image/png;base64,", ""),
+                  mimeType: "image/png"
+                }}
+              ]
+            }
+          ],
+          generationConfig: {temperature}
+        })).response.text()
+
+      if (response.includes("```json")) {
+        response = response.split("```json")[1].split("```")[0];
+      }
+      const parsedResponse = JSON.parse(response);
+      
       const formattedBoxes = parsedResponse.map(
         (box: { box_2d: [number, number, number, number]; label: string }) => {
           const [ymin, xmin, ymax, xmax] = box.box_2d;
@@ -165,137 +155,41 @@ margins).
       );
       setHoverEntered(false);
       setBoundingBoxes2D(formattedBoxes);
-    } else if (detectType === "Points") {
-      const formattedPoints = parsedResponse.map(
-        (point: { point: [number, number]; label: string }) => {
-          return {
-            point: {
-              x: point.point[1] / 1000,
-              y: point.point[0] / 1000,
-            },
-            label: point.label,
-          };
-        },
-      );
-    } else {
-      const formattedBoxes = parsedResponse.map(
-        (box: {
-          box_3d: [
-            number,
-            number,
-            number,
-            number,
-            number,
-            number,
-            number,
-            number,
-            number,
-          ];
-          label: string;
-        }) => {
-          const center = box.box_3d.slice(0, 3);
-          const size = box.box_3d.slice(3, 6);
-          const rpy = box.box_3d
-            .slice(6)
-            .map((x: number) => (x * Math.PI) / 180);
-          return {
-            center,
-            size,
-            rpy,
-            label: box.label,
-          };
-        },
-      );
+    } catch (error) {
+      console.error('Analysis failed:', error);
+    } finally {
+      setIsLoading(false);
     }
   }
 
   return (
-    <div className="flex grow flex-col gap-3">
-      <div className="flex justify-between items-center">
-        <div className="uppercase">Prompt:</div>
-        <label className="flex gap-2 select-none">
-          <input
-            type="checkbox"
-            checked={showRawPrompt}
-            onChange={() => setShowRawPrompt(!showRawPrompt)}
-          />
-          <div>show raw prompt</div>
-        </label>
-      </div>
-      <div className="w-full flex flex-col">
-        {showCustomPrompt ? (
-          <textarea
-          className="w-full bg-[var(--input-color)] rounded-lg resize-none p-4"
-          value={customPrompts[detectType]}
-            onChange={(e) => {
-              const value = e.target.value;
-              const newPrompts = { ...customPrompts };
-              newPrompts[detectType] = value;
-              setCustomPrompts(newPrompts);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-          />
-        ) : showRawPrompt ? (
-          <div className="mb-2 text-[var(--text-color-secondary)]">
-            {is2d ? get2dPrompt() : prompts[detectType][0]}
-          </div>
-        ) :(
-          <div className="flex flex-col gap-2">
-            <div>{prompts[detectType][0]}:</div>
-            <textarea
-              className="w-full bg-[var(--input-color)] rounded-lg resize-none p-4"
-              placeholder="What kind of things do you want to detect?"
-              rows={1}
-              value={is2d ? targetPrompt : prompts[detectType][1]}
-              onChange={(e) => {
-                if (is2d) {
-                  setTargetPrompt(e.target.value);
-                } else {
-                  const value = e.target.value;
-                  const newPrompts = { ...prompts };
-                  newPrompts["2D bounding boxes"] = [value];
-                  setPrompts(newPrompts);
-                }
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-            />
-            {is2d && (<>
-            <div>Label each one with: (optional)</div>
-            <textarea
-              className="w-full bg-[var(--input-color)] rounded-lg resize-none p-4"
-              rows={1}
-              placeholder="How do you want to label the things?"
-              value={labelPrompt}
-              onChange={(e) =>
-                setLabelPrompt(e.target.value)
-              }
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-            />
-            </>)}
-          </div>
-        )}
-      </div>
-      <div className="flex justify-between gap-3">
-        <button className="bg-[#3B68FF] px-12 !text-white !border-none" onClick={handleSend}>
-          Send
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap justify-between items-center gap-4">
+        <button 
+          className={`bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 
+            text-white px-8 py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-blue-500/20
+            flex items-center gap-2 ${isLoading ? 'opacity-75 cursor-not-allowed' : ''}`}
+          onClick={handleSend}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>Analyzing...</span>
+            </>
+          ) : (
+            <>
+              <span className="text-lg">🔍</span>
+              <span>Analyze Image</span>
+            </>
+          )}
         </button>
-        <label className="flex items-center gap-2">
-          temperature:
+        
+        <div className="flex items-center gap-4 bg-gray-900/50 p-3 rounded-lg">
+          <span className="text-gray-300 whitespace-nowrap">Sensitivity:</span>
           <input
             type="range"
             min="0"
@@ -303,9 +197,11 @@ margins).
             step="0.05"
             value={temperature}
             onChange={(e) => setTemperature(Number(e.target.value))}
+            className="w-32 accent-blue-500"
+            disabled={isLoading}
           />
-          {temperature.toFixed(2)}
-        </label>
+          <span className="text-gray-300 w-12 text-right">{temperature.toFixed(2)}</span>
+        </div>
       </div>
     </div>
   );

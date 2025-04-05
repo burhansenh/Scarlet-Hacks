@@ -44,23 +44,62 @@ function App() {
   }, []);
 
   return (
-    <div className="flex flex-col h-[100dvh]">
-      <div className="flex grow flex-col border-b overflow-hidden">
-        <TopBar />
-        {initFinished ? <Content /> : null}
-        <ExtraModeControls />
-      </div>
-      <div className="flex shrink-0 w-full overflow-auto py-6 px-5 gap-6 lg:items-start">
-        <div className="flex flex-col lg:flex-col gap-6 items-center border-r pr-5">
-          <ExampleImages />
-          <SideControls />
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
+      {/* Header */}
+      <header className="p-6 border-b border-gray-700/50 backdrop-blur-sm bg-black/20 sticky top-0 z-50">
+        <div className="container mx-auto flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
+              <span className="text-xl">🌿</span>
+            </div>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
+              Hydro AI
+            </h1>
+          </div>
+          <TopBar />
         </div>
-        <div className="flex flex-row gap-6 grow">
-          <DetectTypeSelector />
-          <Prompt />
+      </header>
+
+      {/* Main Content */}
+      <main className="container mx-auto p-6 flex flex-col lg:flex-row gap-6">
+        {/* Left Panel */}
+        <div className="lg:w-1/4 space-y-6">
+          <div className="bg-gray-800/50 backdrop-blur-sm p-6 rounded-xl shadow-lg border border-gray-700/50">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <span className="text-lg">📸</span>
+              Image Selection
+            </h2>
+            <ExampleImages />
+          </div>
+          
+          <div className="bg-gray-800/50 backdrop-blur-sm p-6 rounded-xl shadow-lg border border-gray-700/50">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <span className="text-lg">🎯</span>
+              Detection Type
+            </h2>
+            <DetectTypeSelector />
+          </div>
         </div>
 
-      </div>
+        {/* Right Panel */}
+        <div className="lg:w-3/4 space-y-6">
+          <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden border border-gray-700/50">
+            <div className="h-[60vh] relative">
+              {initFinished ? <Content /> : null}
+            </div>
+            <ExtraModeControls />
+          </div>
+
+          <div className="bg-gray-800/50 backdrop-blur-sm p-6 rounded-xl shadow-lg border border-gray-700/50">
+            <Prompt />
+          </div>
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="p-6 border-t border-gray-700/50 text-center bg-black/20 backdrop-blur-sm">
+        <p className="text-gray-400">© 2024 Plant Health Analyzer. All rights reserved.</p>
+      </footer>
     </div>
   );
 }

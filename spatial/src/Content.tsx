@@ -72,19 +72,27 @@ export function Content() {
 
   const boundingBoxContainer = useMemo(() => {
     const { width, height } = activeMediaDimensions;
+    if (!width || !height || !containerDims.width || !containerDims.height) {
+      return null;
+    }
+
     const aspectRatio = width / height;
     const containerAspectRatio = containerDims.width / containerDims.height;
-    if (aspectRatio < containerAspectRatio) {
-      return {
-        height: containerDims.height,
-        width: containerDims.height * aspectRatio,
-      };
+    
+    let finalWidth, finalHeight;
+    
+    if (aspectRatio > containerAspectRatio) {
+      finalWidth = containerDims.width;
+      finalHeight = containerDims.width / aspectRatio;
     } else {
-      return {
-        width: containerDims.width,
-        height: containerDims.width / aspectRatio,
-      };
+      finalHeight = containerDims.height;
+      finalWidth = containerDims.height * aspectRatio;
     }
+
+    const top = (containerDims.height - finalHeight) / 2;
+    const left = (containerDims.width - finalWidth) / 2;
+
+    return { width: finalWidth, height: finalHeight, top, left };
   }, [containerDims, activeMediaDimensions]);
 
   function setHoveredBox(e: React.PointerEvent) {
@@ -123,156 +131,74 @@ export function Content() {
   const downRef = useRef<Boolean>(false);
 
   return (
-    <div ref={containerRef} className="w-full grow relative">
-      {stream ? (
-        <video
-          className="absolute top-0 left-0 w-full h-full object-contain"
-          autoPlay
-          onLoadedMetadata={(e) => {
-            setActiveMediaDimensions({
-              width: e.currentTarget.videoWidth,
-              height: e.currentTarget.videoHeight,
-            });
-          }}
-          ref={(video) => {
-            videoRef.current = video;
-            if (video && !video.srcObject) {
-              video.srcObject = stream;
-            }
-          }}
-        />
-      ) : imageSrc ? (
-        <img
-          src={imageSrc}
-          className="absolute top-0 left-0 w-full h-full object-contain"
-          alt="Uploaded image"
-          onLoad={(e) => {
-            setActiveMediaDimensions({
-              width: e.currentTarget.naturalWidth,
-              height: e.currentTarget.naturalHeight,
-            });
-          }}
-        />
-      ) : null}
-      <div
-        className={`absolute w-full h-full left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 ${hoverEntered ? "hide-box" : ""} ${drawMode ? "cursor-crosshair" : ""}`}
-        ref={boundingBoxContainerRef}
-        onPointerEnter={(e) => {
-          if (revealOnHover && !drawMode) {
-            setHoverEntered(true);
-            setHoveredBox(e);
-          }
-        }}
-        onPointerMove={(e) => {
-          if (revealOnHover && !drawMode) {
-            setHoverEntered(true);
-            setHoveredBox(e);
-          }
-          if (downRef.current) {
-            const parentBounds =
-              boundingBoxContainerRef.current!.getBoundingClientRect();
-            setLines((prev) => [
-              ...prev.slice(0, prev.length - 1),
-              [
-                [
-                  ...prev[prev.length - 1][0],
-                  [
-                    (e.clientX - parentBounds.left) /
-                    boundingBoxContainer!.width,
-                    (e.clientY - parentBounds.top) /
-                    boundingBoxContainer!.height,
-                  ],
-                ],
-                prev[prev.length - 1][1],
-              ],
-            ]);
-          }
-        }}
-        onPointerLeave={(e) => {
-          if (revealOnHover && !drawMode) {
-            setHoverEntered(false);
-            setHoveredBox(e);
-          }
-        }}
-        onPointerDown={(e) => {
-          if (drawMode) {
-            setImageSent(false);
-            (e.target as HTMLElement).setPointerCapture(e.pointerId);
-            downRef.current = true;
-            const parentBounds =
-              boundingBoxContainerRef.current!.getBoundingClientRect();
-            setLines((prev) => [
-              ...prev,
-              [
-                [
-                  [
-                    (e.clientX - parentBounds.left) /
-                    boundingBoxContainer!.width,
-                    (e.clientY - parentBounds.top) /
-                    boundingBoxContainer!.height,
-                  ],
-                ],
-                activeColor,
-              ],
-            ]);
-          }
-        }}
-        onPointerUp={(e) => {
-          if (drawMode) {
-            (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-            downRef.current = false;
-          }
-        }}
+    <div ref={containerRef} className="w-full h-full relative bg-gray-900/50">
+      <div 
+        className="absolute"
         style={{
-          width: boundingBoxContainer.width,
-          height: boundingBoxContainer.height,
+          width: boundingBoxContainer?.width,
+          height: boundingBoxContainer?.height,
+          top: boundingBoxContainer?.top,
+          left: boundingBoxContainer?.left,
         }}
       >
-        {lines.length > 0 && (
-          <svg
-            className="absolute top-0 left-0 w-full h-full"
-            style={{
-              pointerEvents: "none",
-              width: boundingBoxContainer?.width,
-              height: boundingBoxContainer?.height,
+        {stream ? (
+          <video
+            className="w-full h-full object-contain"
+            autoPlay
+            onLoadedMetadata={(e) => {
+              setActiveMediaDimensions({
+                width: e.currentTarget.videoWidth,
+                height: e.currentTarget.videoHeight,
+              });
             }}
-          >
-            {lines.map(([points, color], i) => (
-              <path
+            ref={(video) => {
+              videoRef.current = video;
+              if (video && !video.srcObject) {
+                video.srcObject = stream;
+              }
+            }}
+          />
+        ) : imageSrc ? (
+          <img
+            src={imageSrc}
+            className="w-full h-full object-contain"
+            alt="Uploaded image"
+            onLoad={(e) => {
+              setActiveMediaDimensions({
+                width: e.currentTarget.naturalWidth,
+                height: e.currentTarget.naturalHeight,
+              });
+            }}
+          />
+        ) : null}
+        
+        <div
+          className={`absolute inset-0 ${hoverEntered ? "hide-box" : ""} ${
+            drawMode ? "cursor-crosshair" : ""
+          }`}
+          ref={boundingBoxContainerRef}
+        >
+          {detectType === "2D bounding boxes" &&
+            boundingBoxes2D.map((box, i) => (
+              <div
                 key={i}
-                d={getSvgPathFromStroke(
-                  getStroke(
-                    points.map(([x, y]) => [
-                      x * boundingBoxContainer!.width,
-                      y * boundingBoxContainer!.height,
-                      0.5,
-                    ]),
-                    lineOptions,
-                  ),
-                )}
-                fill={color}
-              />
-            ))}
-          </svg>
-        )}
-        {detectType === "2D bounding boxes" &&
-          boundingBoxes2D.map((box, i) => (
-            <div
-              key={i}
-              className={`absolute bbox border-2 border-[#3B68FF] ${i === hoveredBox ? "reveal" : ""}`}
-              style={{
-                transformOrigin: "0 0",
-                top: box.y * 100 + "%",
-                left: box.x * 100 + "%",
-                width: box.width * 100 + "%",
-                height: box.height * 100 + "%",
-              }}
-            >
-              <div className="bg-[#3B68FF] text-white absolute left-0 top-0 text-sm px-1">
-                {box.label}
+                className={`absolute bbox border-2 border-red-500 ${
+                  i === hoveredBox ? "reveal" : ""
+                }`}
+                style={{
+                  transformOrigin: "0 0",
+                  top: box.y * 100 + "%",
+                  left: box.x * 100 + "%",
+                  width: box.width * 100 + "%",
+                  height: box.height * 100 + "%",
+                }}
+              >
+                <div className="bg-red-500 text-white absolute left-0 top-0 text-sm px-1">
+                  {box.label}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+        </div>
       </div>
     </div>
   );

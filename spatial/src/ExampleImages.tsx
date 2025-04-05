@@ -16,19 +16,22 @@ import { useAtom } from "jotai";
 import { ImageSrcAtom, IsUploadedImageAtom } from "./atoms";
 import { useResetState } from "./hooks";
 import { imageOptions } from "./consts";
+import { SideControls } from "./SideControls";
 
 export function ExampleImages() {
   const [, setImageSrc] = useAtom(ImageSrcAtom);
   const [, setIsUploadedImage] = useAtom(IsUploadedImageAtom);
   const resetState = useResetState();
+  
   return (
-      <div className="flex flex-wrap items-start gap-3 shrink-0 w-[190px]">
+    <div className="flex flex-col gap-6">
+      <div className="grid grid-cols-3 gap-4">
         {imageOptions.map((image) => (
           <button
             key={image}
-            className="p-0 w-[56px] h-[56px] relative overflow-hidden"
+            className="relative w-full pt-[100%] rounded-lg overflow-hidden hover:ring-2 hover:ring-blue-500/50 transition-all duration-200"
             onClick={() => {
-            setIsUploadedImage(false);
+              setIsUploadedImage(false);
               setImageSrc(`./${image}`);
               resetState();
             }}
@@ -36,10 +39,13 @@ export function ExampleImages() {
             <img
               src={`./${image}`}
               alt={image}
-              className="absolute left-0 top-0 w-full h-full object-cover" />
+              className="absolute inset-0 w-full h-full object-cover bg-gray-900/50"
+            />
           </button>
         ))}
       </div>
+      <SideControls />
+    </div>
   );
 }
 
