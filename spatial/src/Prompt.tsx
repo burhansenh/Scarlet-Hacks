@@ -43,6 +43,9 @@ export function Prompt() {
   const [videoRef] = useAtom(VideoRefAtom);
   const [imageSrc] = useAtom(ImageSrcAtom);
   const [isLoading, setIsLoading] = useState(false);
+  const [showHealthyNotice, setShowHealthyNotice] = useState(false);
+  const [isNoticeExiting, setIsNoticeExiting] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
 
   const is2d = detectType === "2D bounding boxes";
 
@@ -52,7 +55,7 @@ export function Prompt() {
   2. Stunted growth or wilting (smaller-than-expected size or drooping)  
   3. Curling/crisping leaf edges (upward/downward leaf curling or dry margins).  
 
-  IMPORTANT: Only mark genuine issues with high confidence. No overlapping bounding boxes. 
+  IMPORTANT: Only mark genuine issues with high confidence. No overlapping bounding boxes. Return an empty list if the plant appears healthy.
 
   Output a JSON list with:  
   - Either no issues, or one from the list above.
@@ -60,6 +63,16 @@ export function Prompt() {
   - A text label in "label" specifying the detected issue (e.g., 'yellowing leaves', 'wilting', 'curling edges').  
 
   Format: [{'box_2d':[...], 'label':...}, ...]`;
+
+  const showNotification = () => {
+    setShowHealthyNotice(true);
+    setTimeout(() => setIsVisible(true), 50);
+    
+    setTimeout(() => {
+      setIsVisible(false);
+      setTimeout(() => setShowHealthyNotice(false), 500);
+    }, 2500);
+  };
 
   async function handleSend() {
     setIsLoading(true);
@@ -134,12 +147,27 @@ export function Prompt() {
             }
           ],
           generationConfig: {temperature}
-        })).response.text()
+        })).response.text();
 
+      // Clean up the response
       if (response.includes("```json")) {
         response = response.split("```json")[1].split("```")[0];
+      } else if (response.includes("```")) {
+        response = response.split("```")[1].split("```")[0];
       }
-      const parsedResponse = JSON.parse(response);
+      
+      // Handle empty or invalid responses
+      let parsedResponse = [];
+      try {
+        response = response.trim();
+        parsedResponse = JSON.parse(response);
+        if (!Array.isArray(parsedResponse)) {
+          parsedResponse = [];
+        }
+      } catch (error) {
+        console.error('Failed to parse response:', error);
+        parsedResponse = [];
+      }
       
       const formattedBoxes = parsedResponse.map(
         (box: { box_2d: [number, number, number, number]; label: string }) => {
@@ -153,17 +181,26 @@ export function Prompt() {
           };
         },
       );
+
       setHoverEntered(false);
       setBoundingBoxes2D(formattedBoxes);
+
+      // Always show healthy notice if no issues found
+      if (!formattedBoxes.length) {
+        showNotification();
+      }
+
     } catch (error) {
       console.error('Analysis failed:', error);
+      setBoundingBoxes2D([]); // Clear any existing boxes
+      showNotification(); // Show healthy notice on error
     } finally {
       setIsLoading(false);
     }
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 relative">
       <div className="flex flex-wrap justify-between items-center gap-4">
         <button 
           className={`bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 
@@ -203,6 +240,26 @@ export function Prompt() {
           <span className="text-gray-300 w-12 text-right">{temperature.toFixed(2)}</span>
         </div>
       </div>
+
+      {/* Healthy Plant Notification */}
+      {showHealthyNotice && (
+        <div className="absolute top-0 left-0 right-0 -mt-24 flex justify-center">
+          <div 
+            className={`
+              bg-gradient-to-r from-green-500/90 to-emerald-500/90 
+              backdrop-blur-sm text-white px-6 py-4 rounded-lg shadow-lg 
+              flex items-center gap-3 transition-all duration-500 ease-in-out
+              ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-[-10px]'}
+            `}
+          >
+            <span className="text-2xl">🌱</span>
+            <div>
+              <h3 className="font-semibold text-lg">Plant Looks Healthy!</h3>
+              <p className="text-sm text-green-100">No issues detected in the analysis</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

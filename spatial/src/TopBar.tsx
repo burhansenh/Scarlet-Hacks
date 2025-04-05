@@ -25,11 +25,8 @@ import { modelOptions } from "./consts";
 
 export function TopBar() {
   const resetState = useResetState();
-  const [revealOnHover, setRevealOnHoverMode] = useAtom(RevealOnHoverModeAtom);
-  const [detectType] = useAtom(DetectTypeAtom);
-  const [, setHoverEntered] = useAtom(HoverEnteredAtom);
   const [modelSelected, setModelSelected] = useAtom(ModelSelectedAtom);
-  const [showConfig,] = useAtom(ShowConfigAtom);
+  const [showConfig] = useAtom(ShowConfigAtom);
 
   return (
     <div className="flex items-center gap-4">
@@ -41,23 +38,6 @@ export function TopBar() {
       >
         Reset session
       </button>
-
-      {detectType === "2D bounding boxes" && (
-        <label className="flex items-center gap-2 select-none text-gray-400">
-          <input
-            type="checkbox"
-            checked={revealOnHover}
-            onChange={(e) => {
-              if (e.target.checked) {
-                setHoverEntered(false);
-              }
-              setRevealOnHoverMode(e.target.checked);
-            }}
-            className="accent-blue-500"
-          />
-          <span>Reveal on hover</span>
-        </label>
-      )}
       
       {showConfig && (<label className="flex gap-2 items-center">
         <select

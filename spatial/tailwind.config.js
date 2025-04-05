@@ -19,7 +19,17 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      transitionProperty: {
+        'all': 'all',
+      },
+      transitionDuration: {
+        '500': '500ms',
+      },
+      transitionTimingFunction: {
+        'in-out': 'ease-in-out',
+      },
+    },
   },
   plugins: [],
   darkMode: 'dark'
