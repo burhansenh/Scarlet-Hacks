@@ -29,6 +29,7 @@ import {
 import { useResetState } from "./hooks.js";
 import { DetectTypeSelector } from "./DetectTypeSelector.js";
 import { safetySettings } from "./consts.js";
+import { PlantFeedback } from "./PlantFeedback";
 
 function App() {
   const [, setImageSrc] = useAtom(ImageSrcAtom);
@@ -89,6 +90,8 @@ function App() {
             </div>
             <ExtraModeControls />
           </div>
+
+          <PlantFeedback />
 
           <div className="bg-gray-800/50 backdrop-blur-sm p-6 rounded-xl shadow-lg border border-gray-700/50">
             <Prompt />
